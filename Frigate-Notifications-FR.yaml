@@ -1305,4 +1305,115 @@ actions:
                             sequence:
                               - action: "notify.{{ notify_group_target }}"
                                 data:
-                                  title: "{{title}}"
+                                  title: "{{title}}"attachment:
+                                          url: "{{video if video else attachment }}"
+                                          content-type: "{{ 'application/vnd.apple.mpegurl' if 'm3u8' in video else 'mp4' if 'mp4' in video else 'jpeg' if 'jpg' in attachment else 'gif' }}"
+                                        push:
+                                          sound:
+                                            name: "{{ iif(silent_update, 'none', sound) }}"
+                                            volume: "{{ iif((silent_update or sound == 'none'), 0, volume) }}"
+                                            critical: "{{ iif(critical, 1, 0) }}"
+                                        entity_id: "{{ios_live_view}}"
+                                        # Actions
+                                        actions:
+                                          - action: URI
+                                            title: "{{button_1}}"
+                                            uri: "{{url_1}}"
+                                            icon: "{{icon_1}}"
+                                          - action: URI
+                                            title: "{{button_2}}"
+                                            uri: "{{url_2}}"
+                                            icon: "{{icon_2}}"
+                                          - action: "{{ 'URI' if '/' in url_3 else url_3 }}"
+                                            title: "{{button_3}}"
+                                            uri: "{{url_3}}"
+                                            icon: "{{icon_3}}"
+                                            destructive: true
+                              default:
+                                - action: "notify.{{ notify_group_target }}"
+                                  data:
+                                    title: "{{title}}"
+                                    message: "{{message}}"
+                                    data:
+                                      tag: "{{ id }}"
+                                      group: "{{ group }}"
+                                      color: "{{color}}"
+                                      # Spécifique Android
+                                      subject: "{{subtitle}}"
+                                      image: "{{attachment}}"
+                                      video: "{{video}}"
+                                      clickAction: "{{tap_action}}"
+                                      ttl: 0
+                                      priority: high
+                                      alert_once: "{{ alert_once }}"
+                                      notification_icon: "{{icon}}"
+                                      sticky: "{{sticky}}"
+                                      channel: "{{'alarm_stream' if critical else channel}}"
+                                      car_ui: "{{android_auto}}"
+                                      # Android/Fire TV
+                                      fontsize: "{{tv_size}}"
+                                      position: "{{tv_position}}"
+                                      duration: "{{tv_duration}}"
+                                      transparency: "{{tv_transparency}}"
+                                      interrupt: "{{tv_interrupt}}"
+                                      # Spécifique iOS
+                                      subtitle: "{{subtitle}}"
+                                      url: "{{tap_action}}"
+                                      attachment:
+                                        url: "{{video if video else attachment }}"
+                                        content-type: "{{ 'application/vnd.apple.mpegurl' if 'm3u8' in video else 'mp4' if 'mp4' in video else 'jpeg' if 'jpg' in attachment else 'gif' }}"
+                                      push:
+                                        sound:
+                                          name: "{{ iif(silent_update, 'none', sound) }}"
+                                          volume: "{{ iif((silent_update or sound == 'none'), 0, volume) }}"
+                                          critical: "{{ iif(critical, 1, 0) }}"
+                                      entity_id: "{{ios_live_view}}"
+                                      # Actions
+                                      actions:
+                                        - action: URI
+                                          title: "{{button_1}}"
+                                          uri: "{{url_1}}"
+                                          icon: "{{icon_1}}"
+                                        - action: URI
+                                          title: "{{button_2}}"
+                                          uri: "{{url_2}}"
+                                          icon: "{{icon_2}}"
+                                        - action: "{{ 'URI' if '/' in url_3 else url_3 }}"
+                                          title: "{{button_3}}"
+                                          uri: "{{url_3}}"
+                                          icon: "{{icon_3}}"
+                                          destructive: true
+
+                            - if: "{{tts and (not tts_helper or not alert_once or (tts_helper and id not in states(tts_helper)))}}"
+                              then:
+                                sequence:
+                                  - choose:
+                                      - conditions: "{{ not notify_group_target }}"
+                                        sequence:
+                                          - device_id: !input notify_device
+                                            domain: mobile_app
+                                            type: notify
+                                            message: "{{'TTS'}}"
+                                            data:
+                                              tag: "{{ id }}{{'-loitering-tts' if loitering}}"
+                                              channel: "{{'alarm_stream' if critical else channel}}"
+                                              alert_once: "{{ alert_once }}"
+                                              tts_text: "{{message}}"
+
+                                    default:
+                                      - action: "notify.{{ notify_group_target }}"
+                                        data:
+                                          message: "{{'TTS'}}"
+                                          data:
+                                            tag: "{{ id }}{{'-loitering-tts' if loitering}}"
+                                            channel: "{{'alarm_stream' if critical else channel}}"
+                                            alert_once: "{{ alert_once }}"
+                                            tts_text: "{{message}}"
+                                  - action: input_text.set_value
+                                    data:
+                                      value: |
+                                        {% set newIds = id + '|' + states(tts_helper) %}
+                                        {{ newIds[:250] }}
+                                    target:
+                                      entity_id: "{{tts_helper}}"
+              until: "{{ not wait.trigger or wait.trigger.payload_json['type'] == 'end' }}"
